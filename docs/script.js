@@ -43,26 +43,56 @@ class SilenceCutter {
     }
 
     setupEventListeners() {
+        console.log('Setting up event listeners...');
+        
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const processBtn = document.getElementById('processBtn');
         const downloadAllBtn = document.getElementById('downloadAllBtn');
 
+        console.log('Elements found:', {
+            uploadArea: !!uploadArea,
+            fileInput: !!fileInput,
+            processBtn: !!processBtn,
+            downloadAllBtn: !!downloadAllBtn
+        });
+
+        if (!uploadArea || !fileInput) {
+            console.error('Required elements not found!');
+            return;
+        }
+
         // File upload handling
-        uploadArea.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => {
+        uploadArea.addEventListener('click', (e) => {
+            console.log('Upload area clicked');
             e.preventDefault();
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            console.log('Drag over detected');
+            e.preventDefault();
+            e.stopPropagation();
             uploadArea.classList.add('dragover');
         });
-        uploadArea.addEventListener('dragleave', () => {
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            console.log('Drag leave detected');
+            e.preventDefault();
+            e.stopPropagation();
             uploadArea.classList.remove('dragover');
         });
+        
         uploadArea.addEventListener('drop', (e) => {
+            console.log('Drop detected, files:', e.dataTransfer.files.length);
             e.preventDefault();
+            e.stopPropagation();
             uploadArea.classList.remove('dragover');
             this.handleFiles(e.dataTransfer.files);
         });
+        
         fileInput.addEventListener('change', (e) => {
+            console.log('File input changed, files:', e.target.files.length);
             this.handleFiles(e.target.files);
         });
 
@@ -72,32 +102,61 @@ class SilenceCutter {
         const minSilenceDuration = document.getElementById('minSilenceDuration');
         const durationValue = document.getElementById('durationValue');
 
-        threshold.addEventListener('input', (e) => {
-            thresholdValue.textContent = `${e.target.value} dB`;
-        });
-        minSilenceDuration.addEventListener('input', (e) => {
-            durationValue.textContent = `${e.target.value} seconds`;
-        });
+        if (threshold && thresholdValue) {
+            threshold.addEventListener('input', (e) => {
+                thresholdValue.textContent = `${e.target.value} dB`;
+            });
+        }
+        
+        if (minSilenceDuration && durationValue) {
+            minSilenceDuration.addEventListener('input', (e) => {
+                durationValue.textContent = `${e.target.value} seconds`;
+            });
+        }
 
         // Process button
-        processBtn.addEventListener('click', () => {
-            this.processFiles();
-        });
+        if (processBtn) {
+            processBtn.addEventListener('click', () => {
+                console.log('Process button clicked');
+                this.processFiles();
+            });
+        }
 
         // Download all button
-        downloadAllBtn.addEventListener('click', () => {
-            this.downloadAllResults();
-        });
+        if (downloadAllBtn) {
+            downloadAllBtn.addEventListener('click', () => {
+                console.log('Download all button clicked');
+                this.downloadAllResults();
+            });
+        }
+        
+        console.log('Event listeners setup complete');
     }
 
     handleFiles(files) {
-        if (files.length === 0) return;
+        console.log('handleFiles called with:', files.length, 'files');
+        if (files.length === 0) {
+            console.log('No files provided');
+            return;
+        }
 
         const filesList = document.getElementById('filesList');
         const filesSection = document.getElementById('filesSection');
         
+        console.log('Files elements found:', {
+            filesList: !!filesList,
+            filesSection: !!filesSection
+        });
+        
+        if (!filesList || !filesSection) {
+            console.error('Files display elements not found!');
+            return;
+        }
+        
         filesList.innerHTML = '';
         this.selectedFiles = Array.from(files);
+        
+        console.log('Processing files:', this.selectedFiles.map(f => f.name));
         
         this.selectedFiles.forEach((file, index) => {
             const fileItem = document.createElement('div');
@@ -110,6 +169,7 @@ class SilenceCutter {
         });
         
         filesSection.style.display = 'block';
+        console.log('Files section displayed');
     }
 
     async processFiles() {
