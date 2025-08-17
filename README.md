@@ -1,30 +1,68 @@
-# Audio Cleaner
+# Silence Cutter - Web Audio Cleaner
 
-A desktop application that automatically removes silence from the beginning and end of MP3 files, making your audio files ready for production.
+A web application that automatically removes silence from the beginning and end of audio files, making your audio files ready for production. **No downloads required - works entirely in your browser!**
+
+## 🌐 Live Demo
+
+**Try it now:** [https://polarpointretail-oss.github.io/silence-cutter/](https://polarpointretail-oss.github.io/silence-cutter/)
 
 ## Features
 
-- 🎵 **Silence Detection**: Automatically detects and removes leading and trailing silence
-- 📁 **Batch Processing**: Process multiple MP3 files at once
-- 🎚️ **Configurable Threshold**: Adjustable silence detection sensitivity (-30dB default)
-- 🔄 **Concatenation**: Combines multiple files into a single cleaned output
-- 🎯 **High Quality**: Uses FFmpeg for professional-grade audio processing
-- 💻 **Cross-Platform**: Works on Windows, macOS, and Linux
+- 🎵 **Smart Silence Detection**: Automatically detects and removes leading and trailing silence
+- 📁 **Batch Processing**: Process multiple audio files at once
+- 🎚️ **Configurable Threshold**: Adjustable silence detection sensitivity (-50dB to -10dB)
+- ⏱️ **Duration Control**: Set minimum silence duration (0.1 to 2.0 seconds)
+- 🔒 **Privacy First**: All processing happens in your browser - no data leaves your device
+- 💻 **No Installation**: Works on any modern browser, no downloads required
+- 🎯 **High Quality**: Uses FFmpeg.wasm for professional-grade audio processing
+- 📱 **Mobile Friendly**: Responsive design works on desktop, tablet, and mobile
 
-## Screenshots
+## How to Use
 
-![Audio Cleaner Interface](https://via.placeholder.com/640x440/4A90E2/FFFFFF?text=Audio+Cleaner+Interface)
+1. **Visit the website**: Go to [https://polarpointretail-oss.github.io/silence-cutter/](https://polarpointretail-oss.github.io/silence-cutter/)
+2. **Upload files**: Drag and drop audio files or click to browse
+3. **Adjust settings**: Configure silence threshold and minimum duration
+4. **Process**: Click "Process Audio Files" and wait for completion
+5. **Download**: Download your cleaned audio files
 
-## Installation
+## Supported Formats
 
-### Download Pre-built Binaries
+- **Input**: MP3, WAV, M4A, OGG, FLAC
+- **Output**: WAV (high quality)
 
-Download the latest release for your platform:
-- [Windows (.exe)](https://github.com/polarpointretail-oss/silence-cutter/releases)
-- [macOS (.dmg)](https://github.com/polarpointretail-oss/silence-cutter/releases)
-- [Linux (.AppImage)](https://github.com/polarpointretail-oss/silence-cutter/releases)
+## How It Works
 
-### Build from Source
+The web application uses:
+
+1. **Web Audio API**: For file handling and audio processing
+2. **FFmpeg.wasm**: WebAssembly version of FFmpeg for professional audio analysis
+3. **Silence Detection**: Uses FFmpeg's `silencedetect` filter to find silence boundaries
+4. **Audio Trimming**: Removes audio outside the detected boundaries
+5. **Client-side Processing**: Everything happens in your browser for privacy
+
+## Technical Details
+
+- **Framework**: Vanilla JavaScript with Web Audio API
+- **Audio Processing**: FFmpeg.wasm (WebAssembly)
+- **UI**: HTML5, CSS3, JavaScript
+- **Deployment**: GitHub Pages
+
+## Development
+
+### Project Structure
+
+```
+silence-cutter/
+├── docs/                 # GitHub Pages website
+│   ├── index.html       # Main web application
+│   ├── styles.css       # Application styles
+│   └── script.js        # Application logic
+├── main.js              # Electron main process (desktop app)
+├── renderer/            # Electron renderer (desktop app)
+└── package.json         # Dependencies and build config
+```
+
+### Local Development
 
 1. **Clone the repository**
    ```bash
@@ -32,91 +70,50 @@ Download the latest release for your platform:
    cd silence-cutter
    ```
 
-2. **Install dependencies**
+2. **Serve the web app locally**
    ```bash
-   npm install
-   ```
-
-3. **Run the application**
-   ```bash
-   npm start
-   ```
-
-4. **Build for distribution**
-   ```bash
-   # Build for all platforms
-   npm run build
+   # Using Python 3
+   python -m http.server 8000
    
-   # Build for specific platform
-   npm run build:mac
-   npm run build:win
+   # Using Node.js
+   npx serve docs
+   
+   # Using PHP
+   php -S localhost:8000 -t docs
    ```
 
-## Usage
+3. **Open in browser**: http://localhost:8000
 
-1. **Launch the application**
-2. **Click "Select MP3 & Clean"**
-3. **Choose one or more MP3 files** (files will be processed in chronological order)
-4. **Wait for processing** - the app will:
-   - Concatenate all selected files
-   - Detect silence at the beginning and end
-   - Remove the silence
-   - Save the cleaned audio as a WAV file
-5. **Find your cleaned audio** in the `output` folder next to your original files
+### Desktop App Development
 
-## How It Works
-
-The application uses FFmpeg's `silencedetect` filter to identify periods of silence:
-
-1. **Silence Detection**: Analyzes audio for periods below the threshold (-30dB by default)
-2. **Boundary Detection**: Finds the first non-silent moment and last non-silent moment
-3. **Trimming**: Removes all audio outside these boundaries
-4. **Output**: Saves as high-quality WAV file
-
-## Configuration
-
-### Silence Threshold
-
-The default silence threshold is -30dB. You can modify this in the source code:
-
-```javascript
-// In main.js, line ~50
-function detectSilence(filePath, thresholdDb = -30) {
-```
-
-Lower values (e.g., -40dB) are more sensitive to quiet sounds.
-Higher values (e.g., -20dB) only detect very loud silence.
-
-## Technical Details
-
-- **Framework**: Electron
-- **Audio Processing**: FFmpeg (bundled)
-- **Language**: JavaScript/Node.js
-- **UI**: HTML/CSS/JavaScript
-
-## Development
-
-### Project Structure
-
-```
-audio-cleaner/
-├── main.js          # Main Electron process
-├── preload.js       # Preload script for security
-├── renderer/        # UI files
-│   ├── index.html   # Main interface
-│   └── renderer.js  # UI logic
-└── package.json     # Dependencies and build config
-```
-
-### Building
-
-The app uses `electron-builder` for creating distributable packages:
+The repository also includes the original Electron desktop application:
 
 ```bash
-npm run build        # Build for current platform
-npm run build:mac    # Build macOS .dmg
-npm run build:win    # Build Windows .exe
+npm install
+npm start
 ```
+
+## Browser Compatibility
+
+- ✅ Chrome 80+
+- ✅ Firefox 75+
+- ✅ Safari 13+
+- ✅ Edge 80+
+
+## Privacy & Security
+
+- **No server processing**: All audio processing happens in your browser
+- **No data upload**: Your files never leave your device
+- **No tracking**: No analytics or user tracking
+- **Open source**: Transparent code you can audit
+
+## Use Cases
+
+- **🎙️ Podcasters**: Remove dead air from podcast episodes
+- **🎵 Musicians**: Clean up recordings by removing unwanted silence
+- **🎬 Content Creators**: Prepare audio for video editing
+- **📚 Educators**: Clean up lecture recordings
+- **🎧 Audio Engineers**: Quick silence removal for production
 
 ## Contributing
 
@@ -133,8 +130,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - [FFmpeg](https://ffmpeg.org/) for audio processing
-- [Electron](https://electronjs.org/) for cross-platform desktop apps
-- [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) for bundled FFmpeg
+- [FFmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm) for WebAssembly port
+- [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for browser audio handling
 
 ## Support
 
@@ -142,8 +139,8 @@ If you encounter any issues or have questions:
 
 1. Check the [Issues](https://github.com/polarpointretail-oss/silence-cutter/issues) page
 2. Create a new issue with details about your problem
-3. Include your operating system and app version
+3. Include your browser version and operating system
 
 ---
 
-Made with ❤️ for audio enthusiasts 
+Made with ❤️ for audio enthusiasts

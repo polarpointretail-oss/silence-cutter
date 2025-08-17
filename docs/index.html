@@ -3,211 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Cleaner - Remove Silence from MP3 Files</title>
-    <meta name="description" content="Free desktop app to automatically remove silence from the beginning and end of MP3 files. Perfect for podcasters, musicians, and audio professionals.">
+    <title>Silence Cutter - Web Audio Cleaner</title>
+    <meta name="description" content="Remove silence from audio files directly in your browser. No downloads required.">
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 </head>
 <body>
-    <header class="hero">
-        <div class="container">
-            <nav>
-                <div class="logo">🎵 Audio Cleaner</div>
-                <div class="nav-links">
-                    <a href="#features">Features</a>
-                    <a href="#download">Download</a>
-                    <a href="#how-it-works">How It Works</a>
-                    <a href="https://github.com/polarpointretail-oss/silence-cutter" target="_blank">GitHub</a>
-                </div>
-            </nav>
-            
-            <div class="hero-content">
-                <h1>Clean Your Audio Files Automatically</h1>
-                <p class="hero-subtitle">Remove silence from the beginning and end of MP3 files with just one click. Perfect for podcasters, musicians, and audio professionals.</p>
-                
-                <div class="cta-buttons">
-                    <a href="#download" class="btn btn-primary">Download Free</a>
-                    <a href="#how-it-works" class="btn btn-secondary">Learn More</a>
-                </div>
-                
-                <div class="hero-image">
-                    <img src="https://via.placeholder.com/800x500/4A90E2/FFFFFF?text=Audio+Cleaner+Interface" alt="Audio Cleaner Interface" class="app-screenshot">
+    <div class="container">
+        <header class="header">
+            <h1>🎵 Silence Cutter</h1>
+            <p>Remove silence from audio files directly in your browser</p>
+        </header>
+
+        <main class="main">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drop your audio files here</h3>
+                        <p>or click to browse</p>
+                        <p class="file-types">Supports: MP3, WAV, M4A, OGG</p>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="audio/*" style="display: none;">
                 </div>
             </div>
-        </div>
-    </header>
 
-    <main>
-        <section id="features" class="features">
-            <div class="container">
-                <h2>Why Choose Audio Cleaner?</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🎯</div>
-                        <h3>Smart Silence Detection</h3>
-                        <p>Automatically detects and removes leading and trailing silence using advanced audio analysis.</p>
+            <div class="settings-section">
+                <h3>Settings</h3>
+                <div class="setting-group">
+                    <label for="threshold">Silence Threshold:</label>
+                    <div class="threshold-control">
+                        <input type="range" id="threshold" min="-50" max="-10" value="-30" step="5">
+                        <span id="thresholdValue">-30 dB</span>
                     </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">📁</div>
-                        <h3>Batch Processing</h3>
-                        <p>Process multiple MP3 files at once. Perfect for cleaning entire podcast episodes or music albums.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">🎚️</div>
-                        <h3>Configurable Threshold</h3>
-                        <p>Adjustable silence detection sensitivity to match your audio quality and requirements.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
-                        <h3>File Concatenation</h3>
-                        <p>Combine multiple files into a single cleaned output for seamless audio workflows.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">💻</div>
-                        <h3>Cross-Platform</h3>
-                        <p>Works on Windows, macOS, and Linux. Download and run on any operating system.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">⚡</div>
-                        <h3>Fast Processing</h3>
-                        <p>Built with FFmpeg for professional-grade audio processing speed and quality.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="download" class="download">
-            <div class="container">
-                <h2>Download Audio Cleaner</h2>
-                <p class="section-subtitle">Free and open-source. No registration required.</p>
-                
-                <div class="download-grid">
-                    <div class="download-card">
-                        <div class="os-icon">🍎</div>
-                        <h3>macOS</h3>
-                        <p>For Mac computers</p>
-                        <a href="https://github.com/polarpointretail-oss/silence-cutter/releases" class="btn btn-download">Download .dmg</a>
-                    </div>
-                    
-                    <div class="download-card">
-                        <div class="os-icon">🪟</div>
-                        <h3>Windows</h3>
-                        <p>For Windows computers</p>
-                        <a href="https://github.com/polarpointretail-oss/silence-cutter/releases" class="btn btn-download">Download .exe</a>
-                    </div>
-                    
-                    <div class="download-card">
-                        <div class="os-icon">🐧</div>
-                        <h3>Linux</h3>
-                        <p>For Linux computers</p>
-                        <a href="https://github.com/polarpointretail-oss/silence-cutter/releases" class="btn btn-download">Download .AppImage</a>
-                    </div>
+                    <small>Lower values detect quieter sounds as silence</small>
                 </div>
                 
-                <div class="build-from-source">
-                    <h3>Build from Source</h3>
-                    <p>Prefer to build it yourself? Check out our <a href="https://github.com/polarpointretail-oss/silence-cutter#build-from-source">GitHub repository</a> for instructions.</p>
+                <div class="setting-group">
+                    <label for="minSilenceDuration">Minimum Silence Duration:</label>
+                    <div class="duration-control">
+                        <input type="range" id="minSilenceDuration" min="0.1" max="2.0" value="0.5" step="0.1">
+                        <span id="durationValue">0.5 seconds</span>
+                    </div>
+                    <small>Minimum duration of silence to be detected</small>
                 </div>
             </div>
-        </section>
 
-        <section id="how-it-works" class="how-it-works">
-            <div class="container">
-                <h2>How It Works</h2>
-                <div class="steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <h3>Select Your Files</h3>
-                        <p>Choose one or more MP3 files you want to clean. Files will be processed in chronological order.</p>
-                    </div>
-                    
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <h3>Automatic Analysis</h3>
-                        <p>Our app uses FFmpeg's silencedetect filter to analyze your audio and find silence boundaries.</p>
-                    </div>
-                    
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <h3>Silence Removal</h3>
-                        <p>The app removes all audio outside the detected boundaries, eliminating unwanted silence.</p>
-                    </div>
-                    
-                    <div class="step">
-                        <div class="step-number">4</div>
-                        <h3>Clean Output</h3>
-                        <p>Your cleaned audio is saved as a high-quality WAV file in an output folder next to your originals.</p>
-                    </div>
-                </div>
+            <div class="files-section" id="filesSection" style="display: none;">
+                <h3>Selected Files</h3>
+                <div class="files-list" id="filesList"></div>
+                <button class="btn btn-primary" id="processBtn">Process Audio Files</button>
             </div>
-        </section>
 
-        <section class="use-cases">
-            <div class="container">
-                <h2>Perfect For</h2>
-                <div class="use-cases-grid">
-                    <div class="use-case">
-                        <h3>🎙️ Podcasters</h3>
-                        <p>Remove dead air from the beginning and end of podcast episodes for professional sound.</p>
-                    </div>
-                    
-                    <div class="use-case">
-                        <h3>🎵 Musicians</h3>
-                        <p>Clean up recordings by removing unwanted silence before and after your performances.</p>
-                    </div>
-                    
-                    <div class="use-case">
-                        <h3>🎬 Content Creators</h3>
-                        <p>Prepare audio files for video editing by removing unnecessary silence.</p>
-                    </div>
-                    
-                    <div class="use-case">
-                        <h3>📚 Educators</h3>
-                        <p>Clean up lecture recordings and educational content for better student experience.</p>
-                    </div>
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <h3>Processing...</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
+                <div class="progress-text" id="progressText">Initializing...</div>
             </div>
-        </section>
-    </main>
 
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>Audio Cleaner</h4>
-                    <p>Free, open-source audio cleaning tool for professionals and enthusiasts.</p>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Links</h4>
-                    <ul>
-                        <li><a href="https://github.com/polarpointretail-oss/silence-cutter">GitHub</a></li>
-                        <li><a href="https://github.com/polarpointretail-oss/silence-cutter/issues">Issues</a></li>
-                        <li><a href="https://github.com/polarpointretail-oss/silence-cutter/blob/main/LICENSE">License</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Built With</h4>
-                    <ul>
-                        <li><a href="https://electronjs.org/">Electron</a></li>
-                        <li><a href="https://ffmpeg.org/">FFmpeg</a></li>
-                        <li><a href="https://nodejs.org/">Node.js</a></li>
-                    </ul>
-                </div>
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h3>Results</h3>
+                <div class="results-list" id="resultsList"></div>
+                <button class="btn btn-secondary" id="downloadAllBtn">Download All</button>
             </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; 2024 Audio Cleaner. Made with ❤️ for audio enthusiasts.</p>
-            </div>
-        </div>
-    </footer>
+        </main>
 
+        <footer class="footer">
+            <p>Built with Web Audio API • No data leaves your browser • <a href="https://github.com/polarpointretail-oss/silence-cutter" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+
+    <!-- FFmpeg.wasm CDN -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/util.min.js"></script>
     <script src="script.js"></script>
 </body>
-</html> 
+</html>
