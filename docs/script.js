@@ -40,16 +40,31 @@ class SilenceCutter {
                 console.log('FFmpeg loaded via ES module');
             } catch (esmError) {
                 console.log('ES module failed, trying UMD approach...');
+                console.log('ES module error:', esmError);
                 
                 // Approach 2: Try UMD approach
+                console.log('Checking for FFmpeg global:', typeof window.FFmpeg);
+                console.log('Window FFmpeg object:', window.FFmpeg);
+                
                 if (typeof window.FFmpeg !== 'undefined') {
                     createFFmpeg = window.FFmpeg.createFFmpeg;
                     fetchFile = window.FFmpeg.fetchFile;
                     console.log('FFmpeg loaded via UMD');
                 } else {
-                    throw new Error('FFmpeg not available in any format');
+                    // Try alternative UMD structure
+                    console.log('Checking for createFFmpeg global:', typeof window.createFFmpeg);
+                    if (typeof window.createFFmpeg !== 'undefined') {
+                        createFFmpeg = window.createFFmpeg;
+                        fetchFile = window.fetchFile;
+                        console.log('FFmpeg loaded via global createFFmpeg');
+                    } else {
+                        throw new Error('FFmpeg not available in any format');
+                    }
                 }
             }
+            
+            console.log('createFFmpeg function:', typeof createFFmpeg);
+            console.log('fetchFile function:', typeof fetchFile);
             
             this.ffmpeg = createFFmpeg({ 
                 log: true,

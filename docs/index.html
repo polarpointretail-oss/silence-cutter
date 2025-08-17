@@ -78,6 +78,19 @@
     <!-- FFmpeg.wasm UMD fallback -->
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
     
+    <script>
+        // Check what FFmpeg objects are available
+        window.addEventListener('load', function() {
+            console.log('=== FFMPEG AVAILABILITY CHECK ===');
+            console.log('window.FFmpeg:', typeof window.FFmpeg, window.FFmpeg);
+            console.log('window.createFFmpeg:', typeof window.createFFmpeg, window.createFFmpeg);
+            console.log('window.fetchFile:', typeof window.fetchFile, window.fetchFile);
+            console.log('All window properties containing "ffmpeg":', 
+                Object.keys(window).filter(key => key.toLowerCase().includes('ffmpeg')));
+            console.log('=== END CHECK ===');
+        });
+    </script>
+    
     <script type="module" src="script.js?v=20250127-es-module"></script>
 </body>
 </html>
