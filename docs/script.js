@@ -1,5 +1,5 @@
-// ROBUST WEB AUDIO SILENCE CUTTER - FIXED FILE READING
-console.log('=== ROBUST VERSION LOADED ===');
+// PURE WEB AUDIO API SOLUTION - NO FFMPEG AT ALL
+console.log('=== PURE WEB AUDIO API VERSION ===');
 
 class SilenceCutter {
     constructor() {
@@ -444,6 +444,6 @@ class SilenceCutter {
 // Initialize the app when the page loads
 let silenceCutter;
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== DOM LOADED - INITIALIZING ROBUST VERSION ===');
+    console.log('=== DOM LOADED - PURE WEB AUDIO API VERSION ===');
     silenceCutter = new SilenceCutter();
 });

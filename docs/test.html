@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test - No FFmpeg</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Audio Processing Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Audio Context Creation</h2>
+        <button onclick="testAudioContext()">Test Audio Context</button>
+        <div id="audioContextResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: File Reading</h2>
+        <input type="file" id="testFile" accept="audio/*">
+        <button onclick="testFileReading()">Test File Reading</button>
+        <div id="fileReadingResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Audio Decoding</h2>
+        <button onclick="testAudioDecoding()">Test Audio Decoding</button>
+        <div id="audioDecodingResult"></div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let testAudioBuffer = null;
+        
+        async function testAudioContext() {
+            const result = document.getElementById('audioContextResult');
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                result.innerHTML = `<span class="success">✅ Audio Context created successfully! State: ${audioContext.state}</span>`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Audio Context failed: ${error.message}</span>`;
+            }
+        }
+        
+        async function testFileReading() {
+            const result = document.getElementById('fileReadingResult');
+            const fileInput = document.getElementById('testFile');
+            
+            if (!fileInput.files[0]) {
+                result.innerHTML = '<span class="error">❌ Please select a file first</span>';
+                return;
+            }
+            
+            try {
+                const file = fileInput.files[0];
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                result.innerHTML = `<span class="success">✅ File read successfully! Size: ${arrayBuffer.byteLength} bytes</span>`;
+                testAudioBuffer = arrayBuffer;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ File reading failed: ${error.message}</span>`;
+            }
+        }
+        
+        async function testAudioDecoding() {
+            const result = document.getElementById('audioDecodingResult');
+            
+            if (!audioContext) {
+                result.innerHTML = '<span class="error">❌ Audio Context not initialized. Run Test 1 first.</span>';
+                return;
+            }
+            
+            if (!testAudioBuffer) {
+                result.innerHTML = '<span class="error">❌ No audio file loaded. Run Test 2 first.</span>';
+                return;
+            }
+            
+            try {
+                const audioBuffer = await decodeAudioData(audioContext, testAudioBuffer);
+                result.innerHTML = `<span class="success">✅ Audio decoded successfully! Duration: ${audioBuffer.duration}s, Sample Rate: ${audioBuffer.sampleRate}Hz</span>`;
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Audio decoding failed: ${error.message}</span>`;
+            }
+        }
+        
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        function decodeAudioData(audioContext, arrayBuffer) {
+            return new Promise((resolve, reject) => {
+                audioContext.decodeAudioData(
+                    arrayBuffer,
+                    (buffer) => resolve(buffer),
+                    (error) => reject(new Error(`Audio decode failed: ${error}`))
+                );
+            });
+        }
+    </script>
+</body>
+</html>
