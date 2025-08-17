@@ -29,8 +29,27 @@ class SilenceCutter {
         console.log('Loading FFmpeg.wasm...');
         
         try {
-            // Dynamic import to avoid blocking the script
-            const { createFFmpeg, fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js');
+            // Try multiple approaches to load FFmpeg
+            let createFFmpeg, fetchFile;
+            
+            // Approach 1: Try ES module import
+            try {
+                const module = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js');
+                createFFmpeg = module.createFFmpeg;
+                fetchFile = module.fetchFile;
+                console.log('FFmpeg loaded via ES module');
+            } catch (esmError) {
+                console.log('ES module failed, trying UMD approach...');
+                
+                // Approach 2: Try UMD approach
+                if (typeof window.FFmpeg !== 'undefined') {
+                    createFFmpeg = window.FFmpeg.createFFmpeg;
+                    fetchFile = window.FFmpeg.fetchFile;
+                    console.log('FFmpeg loaded via UMD');
+                } else {
+                    throw new Error('FFmpeg not available in any format');
+                }
+            }
             
             this.ffmpeg = createFFmpeg({ 
                 log: true,
