@@ -79,7 +79,9 @@ class SilenceCutter {
                 throw new Error('FFmpeg.wasm not loaded. Please check your internet connection.');
             }
             
-            this.ffmpeg = new FFmpeg();
+            // Use the correct FFmpeg.wasm API
+            const { createFFmpeg, fetchFile } = FFmpeg;
+            this.ffmpeg = createFFmpeg({ log: true });
             
             // Set up logging
             this.ffmpeg.on('log', ({ message }) => {
@@ -93,15 +95,11 @@ class SilenceCutter {
                 }
             });
             
-            // Load FFmpeg core with proper URLs
+            // Load FFmpeg core
             this.progressText.textContent = 'Loading FFmpeg core...';
             this.progressFill.style.width = '50%';
             
-            await this.ffmpeg.load({
-                coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.js',
-                wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm',
-                workerURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.worker.js'
-            });
+            await this.ffmpeg.load();
             
             console.log('FFmpeg.wasm loaded successfully');
             this.ffmpegLoaded = true;
@@ -218,22 +216,21 @@ class SilenceCutter {
         try {
             console.log('Processing file:', file.name, 'size:', file.size);
             
-            // Write input file to FFmpeg
+            // Write input file to FFmpeg using fetchFile
             const inputName = `input_${Date.now()}.${file.name.split('.').pop()}`;
-            await this.ffmpeg.writeFile(inputName, await this.fileToUint8Array(file));
+            const { fetchFile } = FFmpeg;
+            await this.ffmpeg.FS('writeFile', inputName, await fetchFile(file));
             
             // Step 1: Detect silence using silencedetect filter
             console.log('Detecting silence...');
-            await this.ffmpeg.exec([
+            await this.ffmpeg.run([
                 '-i', inputName,
                 '-af', `silencedetect=noise=${thresholdDb}dB:d=${minSilenceDuration}`,
                 '-f', 'null',
                 '-'
             ]);
             
-            // Get the logs to parse silence detection results
-            // Note: FFmpeg.wasm outputs logs to console, not to a file
-            // We'll use a simpler approach for now
+            // Use a simpler approach for silence detection
             const silenceData = {
                 firstSilenceEnd: 0.1, // Default: start after 100ms
                 lastSilenceStart: null // Will be calculated from duration
@@ -254,14 +251,14 @@ class SilenceCutter {
             trimArgs.push('-c:a', 'pcm_s16le', outputName);
             
             console.log('Trimming audio with args:', trimArgs);
-            await this.ffmpeg.exec(trimArgs);
+            await this.ffmpeg.run(trimArgs);
             
             // Read the output file
-            const outputData = await this.ffmpeg.readFile(outputName);
+            const outputData = this.ffmpeg.FS('readFile', outputName);
             
             // Clean up temporary files
-            await this.ffmpeg.deleteFile(inputName);
-            await this.ffmpeg.deleteFile(outputName);
+            this.ffmpeg.FS('unlink', inputName);
+            this.ffmpeg.FS('unlink', outputName);
             
             return {
                 originalFile: file,
@@ -281,17 +278,7 @@ class SilenceCutter {
     
 
     
-    async fileToUint8Array(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const arrayBuffer = e.target.result;
-                resolve(new Uint8Array(arrayBuffer));
-            };
-            reader.onerror = (e) => reject(new Error('Failed to read file'));
-            reader.readAsArrayBuffer(file);
-        });
-    }
+
     
     showResults() {
         this.resultsList.innerHTML = '';
