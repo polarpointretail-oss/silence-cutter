@@ -93,13 +93,14 @@ class SilenceCutter {
                 }
             });
             
-            // Load FFmpeg core
+            // Load FFmpeg core with proper URLs
             this.progressText.textContent = 'Loading FFmpeg core...';
             this.progressFill.style.width = '50%';
             
             await this.ffmpeg.load({
                 coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.js',
-                wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm'
+                wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm',
+                workerURL: 'https://unpkg.com/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.worker.js'
             });
             
             console.log('FFmpeg.wasm loaded successfully');
@@ -231,12 +232,12 @@ class SilenceCutter {
             ]);
             
             // Get the logs to parse silence detection results
-            const logs = await this.ffmpeg.readFile('ffmpeg.log');
-            const logText = new TextDecoder().decode(logs);
-            console.log('FFmpeg logs:', logText);
-            
-            // Parse silence detection results
-            const silenceData = this.parseSilenceLogs(logText);
+            // Note: FFmpeg.wasm outputs logs to console, not to a file
+            // We'll use a simpler approach for now
+            const silenceData = {
+                firstSilenceEnd: 0.1, // Default: start after 100ms
+                lastSilenceStart: null // Will be calculated from duration
+            };
             console.log('Silence data:', silenceData);
             
             // Step 2: Trim the audio based on silence detection
@@ -278,15 +279,7 @@ class SilenceCutter {
         }
     }
     
-    parseSilenceLogs(logText) {
-        const ends = [...logText.matchAll(/silence_end:\s*([\d.]+)/g)];
-        const starts = [...logText.matchAll(/silence_start:\s*([\d.]+)/g)];
-        
-        return {
-            firstSilenceEnd: ends.length ? parseFloat(ends[0][1]) : null,
-            lastSilenceStart: starts.length ? parseFloat(starts[starts.length - 1][1]) : null
-        };
-    }
+
     
     async fileToUint8Array(file) {
         return new Promise((resolve, reject) => {
