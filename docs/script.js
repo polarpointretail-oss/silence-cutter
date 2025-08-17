@@ -1,8 +1,9 @@
-// Web Audio API based silence cutter - CACHE BUST VERSION
-console.log('NEW VERSION LOADED - Web Audio API only');
+// SIMPLE WEB AUDIO SILENCE CUTTER - NO FFMPEG
+console.log('=== FRESH VERSION LOADED ===');
 
 class SilenceCutter {
     constructor() {
+        console.log('SilenceCutter constructor called');
         this.files = [];
         this.results = [];
         this.isProcessing = false;
@@ -14,6 +15,7 @@ class SilenceCutter {
     }
     
     initializeElements() {
+        console.log('Initializing elements');
         this.uploadArea = document.getElementById('uploadArea');
         this.fileInput = document.getElementById('fileInput');
         this.filesSection = document.getElementById('filesSection');
@@ -26,7 +28,6 @@ class SilenceCutter {
         this.resultsList = document.getElementById('resultsList');
         this.downloadAllBtn = document.getElementById('downloadAllBtn');
         
-        // Settings elements
         this.thresholdSlider = document.getElementById('threshold');
         this.thresholdValue = document.getElementById('thresholdValue');
         this.durationSlider = document.getElementById('minSilenceDuration');
@@ -34,7 +35,8 @@ class SilenceCutter {
     }
     
     setupEventListeners() {
-        // File upload
+        console.log('Setting up event listeners');
+        
         this.uploadArea.addEventListener('click', () => this.fileInput.click());
         this.uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -52,7 +54,6 @@ class SilenceCutter {
             this.handleFiles(e.target.files);
         });
         
-        // Settings
         this.thresholdSlider.addEventListener('input', (e) => {
             this.thresholdValue.textContent = `${e.target.value} dB`;
         });
@@ -60,21 +61,19 @@ class SilenceCutter {
             this.durationValue.textContent = `${e.target.value} seconds`;
         });
         
-        // Process button
         this.processBtn.addEventListener('click', () => this.processFiles());
-        
-        // Download all button
         this.downloadAllBtn.addEventListener('click', () => this.downloadAll());
     }
     
     async initializeAudioContext() {
         try {
+            console.log('Initializing audio context');
             this.progressSection.style.display = 'block';
             this.progressText.textContent = 'Initializing audio processing...';
             this.progressFill.style.width = '50%';
             
-            // Initialize Web Audio API
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio context created:', this.audioContext);
             
             this.progressText.textContent = 'Audio processing ready!';
             this.progressFill.style.width = '100%';
@@ -92,6 +91,7 @@ class SilenceCutter {
     }
     
     handleFiles(fileList) {
+        console.log('Handling files:', fileList.length);
         const audioFiles = Array.from(fileList).filter(file => 
             file.type.startsWith('audio/') || 
             file.name.match(/\.(mp3|wav|m4a|ogg|flac)$/i)
@@ -142,6 +142,7 @@ class SilenceCutter {
     }
     
     async processFiles() {
+        console.log('Processing files started');
         if (this.isProcessing || this.files.length === 0) return;
         
         if (!this.audioContext) {
@@ -155,6 +156,8 @@ class SilenceCutter {
         
         const threshold = parseInt(this.thresholdSlider.value);
         const minDuration = parseFloat(this.durationSlider.value);
+        
+        console.log('Processing with threshold:', threshold, 'duration:', minDuration);
         
         for (let i = 0; i < this.files.length; i++) {
             const file = this.files[i];
@@ -183,52 +186,72 @@ class SilenceCutter {
     
     async processFile(file, threshold, minDuration) {
         try {
-            console.log('Processing file:', file.name, 'with Web Audio API');
+            console.log('Processing file:', file.name);
             
             // Convert threshold from dB to linear scale
             const thresholdLinear = Math.pow(10, threshold / 20);
+            console.log('Threshold linear:', thresholdLinear);
             
             // Read the audio file
             const arrayBuffer = await file.arrayBuffer();
+            console.log('Array buffer size:', arrayBuffer.byteLength);
+            
             const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            console.log('Audio buffer decoded:', {
+                sampleRate: audioBuffer.sampleRate,
+                duration: audioBuffer.duration,
+                channels: audioBuffer.numberOfChannels,
+                length: audioBuffer.length
+            });
             
             // Get audio data
-            const channelData = audioBuffer.getChannelData(0); // Use first channel
+            const channelData = audioBuffer.getChannelData(0);
             const sampleRate = audioBuffer.sampleRate;
-            const duration = audioBuffer.duration;
             
-            console.log('Audio decoded:', { sampleRate, duration, samples: channelData.length });
+            // Simple silence detection - find first and last non-silent samples
+            let firstNonSilent = 0;
+            let lastNonSilent = channelData.length - 1;
             
-            // Find silence boundaries
-            const silenceData = this.detectSilence(channelData, sampleRate, thresholdLinear, minDuration);
+            for (let i = 0; i < channelData.length; i++) {
+                if (Math.abs(channelData[i]) > thresholdLinear) {
+                    firstNonSilent = i;
+                    break;
+                }
+            }
             
-            // Calculate trim points
-            const startSample = Math.max(0, Math.floor((silenceData.firstSilenceEnd || 0) * sampleRate));
-            const endSample = silenceData.lastSilenceStart ? 
-                Math.min(channelData.length, Math.floor((silenceData.lastSilenceStart + minDuration) * sampleRate)) : 
-                channelData.length;
+            for (let i = channelData.length - 1; i >= 0; i--) {
+                if (Math.abs(channelData[i]) > thresholdLinear) {
+                    lastNonSilent = i;
+                    break;
+                }
+            }
             
-            console.log('Trim points:', { startSample, endSample, startTime: startSample/sampleRate, endTime: endSample/sampleRate });
+            console.log('Silence detection:', {
+                firstNonSilent,
+                lastNonSilent,
+                startTime: firstNonSilent / sampleRate,
+                endTime: lastNonSilent / sampleRate
+            });
             
-            // Create trimmed audio buffer
-            const trimmedLength = endSample - startSample;
+            // Create trimmed buffer
+            const trimmedLength = lastNonSilent - firstNonSilent + 1;
             const trimmedBuffer = this.audioContext.createBuffer(1, trimmedLength, sampleRate);
             const trimmedData = trimmedBuffer.getChannelData(0);
             
-            // Copy trimmed audio data
             for (let i = 0; i < trimmedLength; i++) {
-                trimmedData[i] = channelData[startSample + i];
+                trimmedData[i] = channelData[firstNonSilent + i];
             }
             
-            // Convert to WAV format
+            // Convert to WAV
             const wavData = this.audioBufferToWav(trimmedBuffer);
+            console.log('WAV data created, size:', wavData.length);
             
             return {
                 originalFile: file,
                 outputData: wavData,
                 outputName: `cleaned_${file.name.replace(/\.[^/.]+$/, '')}.wav`,
-                startTime: startSample / sampleRate,
-                endTime: endSample / sampleRate,
+                startTime: firstNonSilent / sampleRate,
+                endTime: lastNonSilent / sampleRate,
                 duration: trimmedLength / sampleRate,
                 success: true
             };
@@ -239,41 +262,13 @@ class SilenceCutter {
         }
     }
     
-    detectSilence(channelData, sampleRate, threshold, minDuration) {
-        const minSamples = Math.floor(minDuration * sampleRate);
-        let firstSilenceEnd = null;
-        let lastSilenceStart = null;
-        
-        // Find first non-silent moment
-        for (let i = 0; i < channelData.length; i++) {
-            if (Math.abs(channelData[i]) > threshold) {
-                firstSilenceEnd = i / sampleRate;
-                break;
-            }
-        }
-        
-        // Find last non-silent moment
-        for (let i = channelData.length - 1; i >= 0; i--) {
-            if (Math.abs(channelData[i]) > threshold) {
-                lastSilenceStart = i / sampleRate;
-                break;
-            }
-        }
-        
-        return {
-            firstSilenceEnd: firstSilenceEnd,
-            lastSilenceStart: lastSilenceStart
-        };
-    }
-    
     audioBufferToWav(buffer) {
         const length = buffer.length;
         const sampleRate = buffer.sampleRate;
         const channels = buffer.numberOfChannels;
         
-        // WAV header
         const headerLength = 44;
-        const dataLength = length * channels * 2; // 16-bit samples
+        const dataLength = length * channels * 2;
         const totalLength = headerLength + dataLength;
         
         const arrayBuffer = new ArrayBuffer(totalLength);
@@ -394,6 +389,6 @@ class SilenceCutter {
 // Initialize the app when the page loads
 let silenceCutter;
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing SilenceCutter');
+    console.log('=== DOM LOADED - INITIALIZING ===');
     silenceCutter = new SilenceCutter();
 });
