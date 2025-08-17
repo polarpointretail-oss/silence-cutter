@@ -1,347 +1,265 @@
-// FFmpeg.wasm Audio Silence Cutter
-console.log('=== FFMPEG.WASM VERSION LOADED ===');
-console.log('=== TIMESTAMP: ' + new Date().toISOString() + ' ===');
+// ES Module approach for FFmpeg.wasm
+import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js';
 
 class SilenceCutter {
     constructor() {
-        console.log('SilenceCutter constructor called');
-        this.files = [];
-        this.results = [];
-        this.isProcessing = false;
         this.ffmpeg = null;
         this.ffmpegLoaded = false;
-        
-        this.initializeElements();
-        this.setupEventListeners();
-        this.loadFFmpeg();
+        this.init();
     }
-    
-    initializeElements() {
-        console.log('Initializing elements');
-        this.uploadArea = document.getElementById('uploadArea');
-        this.fileInput = document.getElementById('fileInput');
-        this.filesSection = document.getElementById('filesSection');
-        this.filesList = document.getElementById('filesList');
-        this.processBtn = document.getElementById('processBtn');
-        this.progressSection = document.getElementById('progressSection');
-        this.progressFill = document.getElementById('progressFill');
-        this.progressText = document.getElementById('progressText');
-        this.resultsSection = document.getElementById('resultsSection');
-        this.resultsList = document.getElementById('resultsList');
-        this.downloadAllBtn = document.getElementById('downloadAllBtn');
-        
-        this.thresholdSlider = document.getElementById('threshold');
-        this.thresholdValue = document.getElementById('thresholdValue');
-        this.durationSlider = document.getElementById('minSilenceDuration');
-        this.durationValue = document.getElementById('durationValue');
-    }
-    
-    setupEventListeners() {
-        console.log('Setting up event listeners');
-        
-        this.uploadArea.addEventListener('click', () => this.fileInput.click());
-        this.uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            this.uploadArea.classList.add('dragover');
-        });
-        this.uploadArea.addEventListener('dragleave', () => {
-            this.uploadArea.classList.remove('dragover');
-        });
-        this.uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            this.uploadArea.classList.remove('dragover');
-            this.handleFiles(e.dataTransfer.files);
-        });
-        this.fileInput.addEventListener('change', (e) => {
-            this.handleFiles(e.target.files);
-        });
-        
-        this.thresholdSlider.addEventListener('input', (e) => {
-            this.thresholdValue.textContent = `${e.target.value} dB`;
-        });
-        this.durationSlider.addEventListener('input', (e) => {
-            this.durationValue.textContent = `${e.target.value} seconds`;
-        });
-        
-        this.processBtn.addEventListener('click', () => this.processFiles());
-        this.downloadAllBtn.addEventListener('click', () => this.downloadAll());
-    }
-    
-    async loadFFmpeg() {
+
+    async init() {
         try {
-            console.log('Loading FFmpeg.wasm...');
-            this.progressSection.style.display = 'block';
-            this.progressText.textContent = 'Loading FFmpeg.wasm...';
-            this.progressFill.style.width = '25%';
-            
-            // Check if FFmpeg is available
-            if (typeof FFmpeg === 'undefined') {
-                throw new Error('FFmpeg.wasm not loaded. Please check your internet connection.');
-            }
-            
-            // Use the correct FFmpeg.wasm API
-            const { createFFmpeg, fetchFile } = FFmpeg;
-            this.ffmpeg = createFFmpeg({ log: true });
-            
-            // Set up logging
-            this.ffmpeg.on('log', ({ message }) => {
-                console.log('FFmpeg:', message);
+            await this.loadFFmpeg();
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('Initialization failed:', error);
+            this.showError('Failed to initialize audio processor');
+        }
+    }
+
+    async loadFFmpeg() {
+        console.log('Loading FFmpeg.wasm...');
+        this.updateProgress('Loading FFmpeg.wasm...', 10);
+        
+        try {
+            this.ffmpeg = createFFmpeg({ 
+                log: true,
+                coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.js',
+                wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm'
             });
             
-            this.ffmpeg.on('progress', ({ progress }) => {
-                console.log('FFmpeg progress:', progress);
-                if (this.progressText) {
-                    this.progressText.textContent = `Processing... ${Math.round(progress * 100)}%`;
-                }
-            });
-            
-            // Load FFmpeg core
-            this.progressText.textContent = 'Loading FFmpeg core...';
-            this.progressFill.style.width = '50%';
-            
+            this.updateProgress('Initializing FFmpeg...', 30);
             await this.ffmpeg.load();
             
-            console.log('FFmpeg.wasm loaded successfully');
             this.ffmpegLoaded = true;
-            
-            this.progressText.textContent = 'FFmpeg ready!';
-            this.progressFill.style.width = '100%';
-            
-            setTimeout(() => {
-                this.progressSection.style.display = 'none';
-            }, 1000);
+            this.updateProgress('FFmpeg loaded successfully!', 100);
+            console.log('FFmpeg loaded successfully');
             
         } catch (error) {
-            console.error('Failed to load FFmpeg:', error);
-            this.progressText.textContent = `Failed to load FFmpeg: ${error.message}`;
-            this.progressFill.style.width = '100%';
-            this.progressFill.style.background = '#dc3545';
+            console.error('FFmpeg loading failed:', error);
+            throw new Error('FFmpeg.wasm not loaded. Please check your internet connection.');
         }
     }
-    
-    handleFiles(fileList) {
-        console.log('Handling files:', fileList.length);
-        const audioFiles = Array.from(fileList).filter(file => 
-            file.type.startsWith('audio/') || 
-            file.name.match(/\.(mp3|wav|m4a|ogg|flac)$/i)
-        );
-        
-        if (audioFiles.length === 0) {
-            alert('Please select valid audio files (MP3, WAV, M4A, OGG, FLAC)');
-            return;
-        }
-        
-        this.files = [...this.files, ...audioFiles];
-        this.updateFilesList();
-        this.filesSection.style.display = 'block';
-    }
-    
-    updateFilesList() {
-        this.filesList.innerHTML = '';
-        
-        this.files.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            
-            const fileSize = this.formatFileSize(file.size);
-            
-            fileItem.innerHTML = `
-                <div class="file-info">
-                    <div class="file-icon">🎵</div>
-                    <div class="file-details">
-                        <h4>${file.name}</h4>
-                        <p>${fileSize}</p>
-                    </div>
-                </div>
-                <button class="remove-file" onclick="silenceCutter.removeFile(${index})">Remove</button>
-            `;
-            
-            this.filesList.appendChild(fileItem);
+
+    setupEventListeners() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const processBtn = document.getElementById('processBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            this.handleFiles(e.target.files);
+        });
+
+        // Settings controls
+        const threshold = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const minSilenceDuration = document.getElementById('minSilenceDuration');
+        const durationValue = document.getElementById('durationValue');
+
+        threshold.addEventListener('input', (e) => {
+            thresholdValue.textContent = `${e.target.value} dB`;
+        });
+        minSilenceDuration.addEventListener('input', (e) => {
+            durationValue.textContent = `${e.target.value} seconds`;
+        });
+
+        // Process button
+        processBtn.addEventListener('click', () => {
+            this.processFiles();
+        });
+
+        // Download all button
+        downloadAllBtn.addEventListener('click', () => {
+            this.downloadAllResults();
         });
     }
-    
-    removeFile(index) {
-        this.files.splice(index, 1);
-        this.updateFilesList();
+
+    handleFiles(files) {
+        if (files.length === 0) return;
+
+        const filesList = document.getElementById('filesList');
+        const filesSection = document.getElementById('filesSection');
         
-        if (this.files.length === 0) {
-            this.filesSection.style.display = 'none';
-        }
+        filesList.innerHTML = '';
+        this.selectedFiles = Array.from(files);
+        
+        this.selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span class="file-name">${file.name}</span>
+                <span class="file-size">${this.formatFileSize(file.size)}</span>
+            `;
+            filesList.appendChild(fileItem);
+        });
+        
+        filesSection.style.display = 'block';
     }
-    
+
     async processFiles() {
-        console.log('Processing files started');
-        if (this.isProcessing || this.files.length === 0) return;
-        
         if (!this.ffmpegLoaded) {
-            alert('FFmpeg is not loaded yet. Please wait or refresh the page.');
+            this.showError('FFmpeg not loaded. Please refresh the page.');
             return;
         }
-        
-        this.isProcessing = true;
-        this.progressSection.style.display = 'block';
-        this.results = [];
-        
-        const thresholdDb = parseInt(this.thresholdSlider.value);
-        const minSilenceDuration = parseFloat(this.durationSlider.value);
-        
-        console.log('Processing with threshold:', thresholdDb, 'duration:', minSilenceDuration);
-        
-        for (let i = 0; i < this.files.length; i++) {
-            const file = this.files[i];
-            
-            try {
-                this.progressText.textContent = `Processing ${file.name}...`;
-                this.progressFill.style.width = `${((i + 1) / this.files.length) * 100}%`;
-                
-                const result = await this.processFile(file, thresholdDb, minSilenceDuration);
-                this.results.push(result);
-                
-            } catch (error) {
-                console.error(`Error processing ${file.name}:`, error);
-                this.results.push({
-                    originalFile: file,
-                    error: error.message,
-                    success: false
-                });
-            }
+
+        if (!this.selectedFiles || this.selectedFiles.length === 0) {
+            this.showError('Please select files to process.');
+            return;
         }
-        
-        this.isProcessing = false;
-        this.progressSection.style.display = 'none';
-        this.showResults();
-    }
-    
-    async processFile(file, thresholdDb, minSilenceDuration) {
+
+        this.showProgress();
+        this.results = [];
+
         try {
-            console.log('Processing file:', file.name, 'size:', file.size);
-            
-            // Write input file to FFmpeg using fetchFile
+            for (let i = 0; i < this.selectedFiles.length; i++) {
+                const file = this.selectedFiles[i];
+                const progress = ((i + 1) / this.selectedFiles.length) * 100;
+                
+                this.updateProgress(`Processing ${file.name}...`, progress);
+                const result = await this.processFile(file);
+                this.results.push(result);
+            }
+
+            this.showResults();
+        } catch (error) {
+            console.error('Processing failed:', error);
+            this.showError(`Processing failed: ${error.message}`);
+        }
+    }
+
+    async processFile(file) {
+        const threshold = document.getElementById('threshold').value;
+        const minSilenceDuration = document.getElementById('minSilenceDuration').value;
+        
+        try {
+            // Write file to FFmpeg's virtual filesystem
             const inputName = `input_${Date.now()}.${file.name.split('.').pop()}`;
-            const { fetchFile } = FFmpeg;
-            await this.ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+            const outputName = `output_${Date.now()}.wav`;
             
-            // Step 1: Detect silence using silencedetect filter
-            console.log('Detecting silence...');
-            await this.ffmpeg.run([
+            this.ffmpeg.FS('writeFile', inputName, await this.fileToUint8Array(file));
+            
+            // Run silence detection
+            await this.ffmpeg.run(
                 '-i', inputName,
-                '-af', `silencedetect=noise=${thresholdDb}dB:d=${minSilenceDuration}`,
+                '-af', `silencedetect=noise=${threshold}dB:d=${minSilenceDuration}`,
                 '-f', 'null',
                 '-'
-            ]);
+            );
             
-            // Use a simpler approach for silence detection
-            const silenceData = {
-                firstSilenceEnd: 0.1, // Default: start after 100ms
-                lastSilenceStart: null // Will be calculated from duration
-            };
-            console.log('Silence data:', silenceData);
+            // Get silence detection logs
+            const logs = this.ffmpeg.FS('readFile', '/dev/stdout');
+            const silenceLogs = this.parseSilenceLogs(logs.toString());
             
-            // Step 2: Trim the audio based on silence detection
-            const startTime = Math.max(0, (silenceData.firstSilenceEnd || 0) - 0.005);
-            const endTime = silenceData.lastSilenceStart ? silenceData.lastSilenceStart + 0.005 : null;
+            // Process the file to remove silence
+            await this.ffmpeg.run(
+                '-i', inputName,
+                '-af', `silenceremove=stop_periods=-1:stop_duration=${minSilenceDuration}:stop_threshold=${threshold}dB`,
+                outputName
+            );
             
-            const outputName = `output_${Date.now()}.wav`;
-            const trimArgs = ['-y', '-ss', startTime.toFixed(3), '-i', inputName];
-            
-            if (endTime) {
-                trimArgs.push('-t', (endTime - startTime).toFixed(3));
-            }
-            
-            trimArgs.push('-c:a', 'pcm_s16le', outputName);
-            
-            console.log('Trimming audio with args:', trimArgs);
-            await this.ffmpeg.run(trimArgs);
-            
-            // Read the output file
+            // Read the processed file
             const outputData = this.ffmpeg.FS('readFile', outputName);
             
-            // Clean up temporary files
+            // Clean up
             this.ffmpeg.FS('unlink', inputName);
             this.ffmpeg.FS('unlink', outputName);
             
             return {
-                originalFile: file,
-                outputData: outputData,
-                outputName: `cleaned_${file.name.replace(/\.[^/.]+$/, '')}.wav`,
-                startTime: startTime,
-                endTime: endTime,
-                duration: endTime ? endTime - startTime : null,
-                success: true
+                originalName: file.name,
+                processedData: outputData,
+                silenceLogs: silenceLogs
             };
             
         } catch (error) {
-            console.error('Error in processFile:', error);
-            throw new Error(`Processing failed: ${error.message}`);
+            console.error(`Error processing ${file.name}:`, error);
+            throw new Error(`Failed to process ${file.name}: ${error.message}`);
         }
     }
-    
 
-    
+    parseSilenceLogs(logs) {
+        // Simple parsing - in a real implementation, you'd parse the actual FFmpeg output
+        return {
+            silenceDetected: logs.includes('silence_start') || logs.includes('silence_end'),
+            duration: 'Unknown'
+        };
+    }
 
-    
+    async fileToUint8Array(file) {
+        return new Uint8Array(await file.arrayBuffer());
+    }
+
+    showProgress() {
+        document.getElementById('progressSection').style.display = 'block';
+        document.getElementById('filesSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'none';
+    }
+
+    updateProgress(text, percentage) {
+        document.getElementById('progressText').textContent = text;
+        document.getElementById('progressFill').style.width = `${percentage}%`;
+    }
+
     showResults() {
-        this.resultsList.innerHTML = '';
+        document.getElementById('progressSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'block';
+        
+        const resultsList = document.getElementById('resultsList');
+        resultsList.innerHTML = '';
         
         this.results.forEach((result, index) => {
             const resultItem = document.createElement('div');
             resultItem.className = 'result-item';
             
-            if (result.success) {
-                const duration = result.duration ? result.duration.toFixed(2) : 'Unknown';
-                
-                resultItem.innerHTML = `
-                    <div class="result-info">
-                        <div class="result-icon">✅</div>
-                        <div class="result-details">
-                            <h4>${result.originalFile.name}</h4>
-                            <p>Trimmed duration: ${duration}s</p>
-                        </div>
-                    </div>
-                    <a href="#" class="download-btn" onclick="silenceCutter.downloadFile(${index})">Download</a>
-                `;
-            } else {
-                resultItem.innerHTML = `
-                    <div class="result-info">
-                        <div class="result-icon">❌</div>
-                        <div class="result-details">
-                            <h4>${result.originalFile.name}</h4>
-                            <p>Error: ${result.error}</p>
-                        </div>
-                    </div>
-                `;
-            }
+            const blob = new Blob([result.processedData], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
             
-            this.resultsList.appendChild(resultItem);
+            resultItem.innerHTML = `
+                <div class="result-info">
+                    <span class="file-name">${result.originalName}</span>
+                    <span class="file-size">${this.formatFileSize(result.processedData.length)}</span>
+                </div>
+                <div class="result-actions">
+                    <a href="${url}" download="${result.originalName.replace(/\.[^/.]+$/, '')}_processed.wav" class="btn btn-small">Download</a>
+                </div>
+            `;
+            
+            resultsList.appendChild(resultItem);
         });
-        
-        this.resultsSection.style.display = 'block';
     }
-    
-    downloadFile(index) {
-        const result = this.results[index];
-        if (!result.success) return;
-        
-        const blob = new Blob([result.outputData], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.outputName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+
+    showError(message) {
+        this.updateProgress(message, 100);
+        document.getElementById('progressFill').style.backgroundColor = '#e74c3c';
     }
-    
-    downloadAll() {
+
+    downloadAllResults() {
         this.results.forEach((result, index) => {
-            if (result.success) {
-                setTimeout(() => this.downloadFile(index), index * 100);
-            }
+            const blob = new Blob([result.processedData], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${result.originalName.replace(/\.[^/.]+$/, '')}_processed.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
         });
     }
-    
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -351,9 +269,7 @@ class SilenceCutter {
     }
 }
 
-// Initialize the app when the page loads
-let silenceCutter;
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== DOM LOADED - FFMPEG.WASM VERSION ===');
-    silenceCutter = new SilenceCutter();
+    new SilenceCutter();
 });
