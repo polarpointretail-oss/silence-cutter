@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Audio Cleaner</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    h1 { font-size: 18px; margin-bottom: 8px; }
+    button { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+    #status { margin-top: 16px; white-space: pre-wrap; font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Audio Cleaner</h1>
+  <p>Select an MP3. The cleaned WAV will be saved to an <code>output</code> folder next to it.</p>
+  <button id="go">Select MP3 & Clean</button>
+  <div id="status"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>
