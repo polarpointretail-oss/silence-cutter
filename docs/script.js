@@ -1,4 +1,6 @@
 // PURE WEB AUDIO API SOLUTION - NO FFMPEG AT ALL
+console.log('=== FRESH VERSION LOADED - NO FFMPEG - WEB AUDIO API ONLY ===');
+console.log('=== TIMESTAMP: ' + new Date().toISOString() + ' ===');
 console.log('=== PURE WEB AUDIO API VERSION ===');
 
 class SilenceCutter {
