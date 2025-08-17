@@ -1,39 +1,46 @@
 // ES Module approach for FFmpeg.wasm
-import { createFFmpeg, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js';
+console.log('Script loading...');
 
 class SilenceCutter {
     constructor() {
+        console.log('SilenceCutter constructor called');
         this.ffmpeg = null;
         this.ffmpegLoaded = false;
+        this.selectedFiles = [];
+        this.results = [];
+        
+        // Set up event listeners immediately
+        this.setupEventListeners();
+        
+        // Try to load FFmpeg in the background
         this.init();
     }
 
     async init() {
         try {
             await this.loadFFmpeg();
-            this.setupEventListeners();
         } catch (error) {
-            console.error('Initialization failed:', error);
-            this.showError('Failed to initialize audio processor');
+            console.error('FFmpeg initialization failed:', error);
+            // Don't show error to user yet - let them try to use the interface
         }
     }
 
     async loadFFmpeg() {
         console.log('Loading FFmpeg.wasm...');
-        this.updateProgress('Loading FFmpeg.wasm...', 10);
         
         try {
+            // Dynamic import to avoid blocking the script
+            const { createFFmpeg, fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js');
+            
             this.ffmpeg = createFFmpeg({ 
                 log: true,
                 coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.js',
                 wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm'
             });
             
-            this.updateProgress('Initializing FFmpeg...', 30);
             await this.ffmpeg.load();
             
             this.ffmpegLoaded = true;
-            this.updateProgress('FFmpeg loaded successfully!', 100);
             console.log('FFmpeg loaded successfully');
             
         } catch (error) {
@@ -174,7 +181,7 @@ class SilenceCutter {
 
     async processFiles() {
         if (!this.ffmpegLoaded) {
-            this.showError('FFmpeg not loaded. Please refresh the page.');
+            this.showError('FFmpeg not loaded yet. Please wait a moment and try again.');
             return;
         }
 
@@ -271,8 +278,11 @@ class SilenceCutter {
     }
 
     updateProgress(text, percentage) {
-        document.getElementById('progressText').textContent = text;
-        document.getElementById('progressFill').style.width = `${percentage}%`;
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+        
+        if (progressText) progressText.textContent = text;
+        if (progressFill) progressFill.style.width = `${percentage}%`;
     }
 
     showResults() {
@@ -305,7 +315,8 @@ class SilenceCutter {
 
     showError(message) {
         this.updateProgress(message, 100);
-        document.getElementById('progressFill').style.backgroundColor = '#e74c3c';
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) progressFill.style.backgroundColor = '#e74c3c';
     }
 
     downloadAllResults() {
@@ -330,6 +341,10 @@ class SilenceCutter {
 }
 
 // Initialize when DOM is loaded
+console.log('DOM loaded, initializing SilenceCutter...');
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded event fired');
     new SilenceCutter();
 });
+
+console.log('Script loaded successfully');
