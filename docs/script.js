@@ -1,5 +1,5 @@
-// SIMPLE WEB AUDIO SILENCE CUTTER - NO FFMPEG
-console.log('=== FRESH VERSION LOADED ===');
+// ROBUST WEB AUDIO SILENCE CUTTER - FIXED FILE READING
+console.log('=== ROBUST VERSION LOADED ===');
 
 class SilenceCutter {
     constructor() {
@@ -72,8 +72,15 @@ class SilenceCutter {
             this.progressText.textContent = 'Initializing audio processing...';
             this.progressFill.style.width = '50%';
             
+            // Create audio context with proper error handling
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            console.log('Audio context created:', this.audioContext);
+            
+            // Resume audio context if suspended (required for user interaction)
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            
+            console.log('Audio context created:', this.audioContext.state);
             
             this.progressText.textContent = 'Audio processing ready!';
             this.progressFill.style.width = '100%';
@@ -150,6 +157,11 @@ class SilenceCutter {
             return;
         }
         
+        // Ensure audio context is resumed
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+        
         this.isProcessing = true;
         this.progressSection.style.display = 'block';
         this.results = [];
@@ -186,17 +198,18 @@ class SilenceCutter {
     
     async processFile(file, threshold, minDuration) {
         try {
-            console.log('Processing file:', file.name);
+            console.log('Processing file:', file.name, 'size:', file.size);
             
             // Convert threshold from dB to linear scale
             const thresholdLinear = Math.pow(10, threshold / 20);
             console.log('Threshold linear:', thresholdLinear);
             
-            // Read the audio file
-            const arrayBuffer = await file.arrayBuffer();
+            // Read file using FileReader for better compatibility
+            const arrayBuffer = await this.readFileAsArrayBuffer(file);
             console.log('Array buffer size:', arrayBuffer.byteLength);
             
-            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            // Decode audio data with proper error handling
+            const audioBuffer = await this.decodeAudioData(arrayBuffer);
             console.log('Audio buffer decoded:', {
                 sampleRate: audioBuffer.sampleRate,
                 duration: audioBuffer.duration,
@@ -208,38 +221,29 @@ class SilenceCutter {
             const channelData = audioBuffer.getChannelData(0);
             const sampleRate = audioBuffer.sampleRate;
             
-            // Simple silence detection - find first and last non-silent samples
-            let firstNonSilent = 0;
-            let lastNonSilent = channelData.length - 1;
+            // Improved silence detection with better algorithm
+            const silenceData = this.detectSilenceImproved(channelData, sampleRate, thresholdLinear, minDuration);
             
-            for (let i = 0; i < channelData.length; i++) {
-                if (Math.abs(channelData[i]) > thresholdLinear) {
-                    firstNonSilent = i;
-                    break;
-                }
-            }
-            
-            for (let i = channelData.length - 1; i >= 0; i--) {
-                if (Math.abs(channelData[i]) > thresholdLinear) {
-                    lastNonSilent = i;
-                    break;
-                }
-            }
-            
-            console.log('Silence detection:', {
-                firstNonSilent,
-                lastNonSilent,
-                startTime: firstNonSilent / sampleRate,
-                endTime: lastNonSilent / sampleRate
-            });
+            console.log('Silence detection:', silenceData);
             
             // Create trimmed buffer
-            const trimmedLength = lastNonSilent - firstNonSilent + 1;
+            const startSample = Math.max(0, Math.floor(silenceData.startTime * sampleRate));
+            const endSample = Math.min(channelData.length, Math.floor(silenceData.endTime * sampleRate));
+            const trimmedLength = endSample - startSample;
+            
+            console.log('Trim points:', {
+                startSample,
+                endSample,
+                trimmedLength,
+                startTime: startSample / sampleRate,
+                endTime: endSample / sampleRate
+            });
+            
             const trimmedBuffer = this.audioContext.createBuffer(1, trimmedLength, sampleRate);
             const trimmedData = trimmedBuffer.getChannelData(0);
             
             for (let i = 0; i < trimmedLength; i++) {
-                trimmedData[i] = channelData[firstNonSilent + i];
+                trimmedData[i] = channelData[startSample + i];
             }
             
             // Convert to WAV
@@ -250,8 +254,8 @@ class SilenceCutter {
                 originalFile: file,
                 outputData: wavData,
                 outputName: `cleaned_${file.name.replace(/\.[^/.]+$/, '')}.wav`,
-                startTime: firstNonSilent / sampleRate,
-                endTime: lastNonSilent / sampleRate,
+                startTime: startSample / sampleRate,
+                endTime: endSample / sampleRate,
                 duration: trimmedLength / sampleRate,
                 success: true
             };
@@ -260,6 +264,57 @@ class SilenceCutter {
             console.error('Error in processFile:', error);
             throw new Error(`Processing failed: ${error.message}`);
         }
+    }
+    
+    readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('Failed to read file'));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    decodeAudioData(arrayBuffer) {
+        return new Promise((resolve, reject) => {
+            this.audioContext.decodeAudioData(
+                arrayBuffer,
+                (buffer) => resolve(buffer),
+                (error) => reject(new Error(`Audio decode failed: ${error}`))
+            );
+        });
+    }
+    
+    detectSilenceImproved(channelData, sampleRate, threshold, minDuration) {
+        const minSamples = Math.floor(minDuration * sampleRate);
+        let startTime = 0;
+        let endTime = channelData.length / sampleRate;
+        
+        // Find first non-silent moment
+        for (let i = 0; i < channelData.length; i++) {
+            if (Math.abs(channelData[i]) > threshold) {
+                startTime = i / sampleRate;
+                break;
+            }
+        }
+        
+        // Find last non-silent moment
+        for (let i = channelData.length - 1; i >= 0; i--) {
+            if (Math.abs(channelData[i]) > threshold) {
+                endTime = i / sampleRate;
+                break;
+            }
+        }
+        
+        // Ensure minimum duration
+        if (endTime - startTime < minDuration) {
+            endTime = startTime + minDuration;
+        }
+        
+        return {
+            startTime: Math.max(0, startTime - 0.005), // 5ms padding
+            endTime: Math.min(channelData.length / sampleRate, endTime + 0.005)
+        };
     }
     
     audioBufferToWav(buffer) {
@@ -389,6 +444,6 @@ class SilenceCutter {
 // Initialize the app when the page loads
 let silenceCutter;
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== DOM LOADED - INITIALIZING ===');
+    console.log('=== DOM LOADED - INITIALIZING ROBUST VERSION ===');
     silenceCutter = new SilenceCutter();
 });
