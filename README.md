@@ -20,16 +20,16 @@ A desktop application that automatically removes silence from the beginning and 
 ### Download Pre-built Binaries
 
 Download the latest release for your platform:
-- [Windows (.exe)](https://github.com/yourusername/audio-cleaner/releases)
-- [macOS (.dmg)](https://github.com/yourusername/audio-cleaner/releases)
-- [Linux (.AppImage)](https://github.com/yourusername/audio-cleaner/releases)
+- [Windows (.exe)](https://github.com/polarpointretail-oss/silence-cutter/releases)
+- [macOS (.dmg)](https://github.com/polarpointretail-oss/silence-cutter/releases)
+- [Linux (.AppImage)](https://github.com/polarpointretail-oss/silence-cutter/releases)
 
 ### Build from Source
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/audio-cleaner.git
-   cd audio-cleaner
+   git clone https://github.com/polarpointretail-oss/silence-cutter.git
+   cd silence-cutter
    ```
 
 2. **Install dependencies**
@@ -140,7 +140,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues or have questions:
 
-1. Check the [Issues](https://github.com/yourusername/audio-cleaner/issues) page
+1. Check the [Issues](https://github.com/polarpointretail-oss/silence-cutter/issues) page
 2. Create a new issue with details about your problem
 3. Include your operating system and app version
 
