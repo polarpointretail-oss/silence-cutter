@@ -5,7 +5,6 @@ class SilenceCutter {
         this.results = [];
         this.ffmpeg = null;
         this.isProcessing = false;
-        this.ffmpegLoaded = false;
         
         this.initializeElements();
         this.setupEventListeners();
@@ -68,34 +67,16 @@ class SilenceCutter {
     
     async loadFFmpeg() {
         try {
-            this.progressSection.style.display = 'block';
             this.progressText.textContent = 'Loading FFmpeg...';
             this.progressFill.style.width = '10%';
             
-            // Check if FFmpegWASM is available
-            if (typeof FFmpegWASM === 'undefined') {
-                throw new Error('FFmpegWASM not loaded. Please check your internet connection and refresh the page.');
-            }
-            
             // Load FFmpeg.wasm
             const { FFmpeg } = FFmpegWASM;
-            if (!FFmpeg) {
-                throw new Error('FFmpeg constructor not found in FFmpegWASM');
-            }
-            
             this.ffmpeg = new FFmpeg();
-            if (!this.ffmpeg) {
-                throw new Error('Failed to create FFmpeg instance');
-            }
-            
-            this.progressFill.style.width = '50%';
-            this.progressText.textContent = 'Initializing FFmpeg...';
-            
             await this.ffmpeg.load();
             
             this.progressText.textContent = 'FFmpeg loaded successfully!';
             this.progressFill.style.width = '100%';
-            this.ffmpegLoaded = true;
             
             setTimeout(() => {
                 this.progressSection.style.display = 'none';
@@ -103,9 +84,7 @@ class SilenceCutter {
             
         } catch (error) {
             console.error('Failed to load FFmpeg:', error);
-            this.progressText.textContent = `Failed to load FFmpeg: ${error.message}. Please refresh the page.`;
-            this.progressFill.style.width = '100%';
-            this.progressFill.style.background = '#dc3545';
+            this.progressText.textContent = 'Failed to load FFmpeg. Please refresh the page.';
         }
     }
     
@@ -162,11 +141,6 @@ class SilenceCutter {
     async processFiles() {
         if (this.isProcessing || this.files.length === 0) return;
         
-        if (!this.ffmpegLoaded) {
-            alert('FFmpeg is not loaded. Please wait for it to load or refresh the page.');
-            return;
-        }
-        
         this.isProcessing = true;
         this.progressSection.style.display = 'block';
         this.results = [];
@@ -200,84 +174,73 @@ class SilenceCutter {
     }
     
     async processFile(file, threshold, minDuration) {
-        // Check if FFmpeg is available
-        if (!this.ffmpeg || !this.ffmpeg.writeFile) {
-            throw new Error('FFmpeg not properly initialized');
-        }
+        // Convert file to array buffer
+        const arrayBuffer = await file.arrayBuffer();
         
-        try {
-            // Convert file to array buffer
-            const arrayBuffer = await file.arrayBuffer();
-            
-            // Write file to FFmpeg
-            await this.ffmpeg.writeFile(file.name, new Uint8Array(arrayBuffer));
-            
-            // Run silence detection
-            const silenceCmd = [
-                '-i', file.name,
-                '-af', `silencedetect=noise=${threshold}dB:d=${minDuration}`,
-                '-f', 'null', '-'
-            ];
-            
-            await this.ffmpeg.exec(silenceCmd);
-            
-            // Get the output to analyze silence
-            const silenceOutput = await this.ffmpeg.readFile('stderr');
-            const silenceText = new TextDecoder().decode(silenceOutput);
-            
-            // Parse silence detection results
-            const silenceData = this.parseSilenceOutput(silenceText);
-            
-            // Get file duration
-            const durationCmd = [
-                '-i', file.name,
-                '-show_entries', 'format=duration',
-                '-of', 'default=nk=1:nw=1'
-            ];
-            
-            await this.ffmpeg.exec(durationCmd);
-            const durationOutput = await this.ffmpeg.readFile('stdout');
-            const durationText = new TextDecoder().decode(durationOutput);
-            const totalDuration = parseFloat(durationText.trim()) || 0;
-            
-            // Calculate trim points
-            const startTime = Math.max(0, (silenceData.firstSilenceEnd || 0) - 0.005);
-            const endTime = silenceData.lastSilenceStart ? 
-                Math.min(totalDuration, silenceData.lastSilenceStart + 0.005) : 
-                totalDuration;
-            
-            const duration = Math.max(0.01, endTime - startTime);
-            
-            // Trim the audio
-            const outputName = `cleaned_${file.name.replace(/\.[^/.]+$/, '')}.wav`;
-            const trimCmd = [
-                '-y',
-                '-ss', startTime.toFixed(3),
-                '-i', file.name,
-                '-t', duration.toFixed(3),
-                '-c:a', 'pcm_s16le',
-                outputName
-            ];
-            
-            await this.ffmpeg.exec(trimCmd);
-            
-            // Read the output file
-            const outputData = await this.ffmpeg.readFile(outputName);
-            
-            return {
-                originalFile: file,
-                outputData: outputData,
-                outputName: outputName,
-                startTime: startTime,
-                endTime: endTime,
-                duration: duration,
-                success: true
-            };
-            
-        } catch (error) {
-            console.error('Error in processFile:', error);
-            throw new Error(`Processing failed: ${error.message}`);
-        }
+        // Write file to FFmpeg
+        await this.ffmpeg.writeFile(file.name, new Uint8Array(arrayBuffer));
+        
+        // Run silence detection
+        const silenceCmd = [
+            '-i', file.name,
+            '-af', `silencedetect=noise=${threshold}dB:d=${minDuration}`,
+            '-f', 'null', '-'
+        ];
+        
+        await this.ffmpeg.exec(silenceCmd);
+        
+        // Get the output to analyze silence
+        const silenceOutput = await this.ffmpeg.readFile('stderr');
+        const silenceText = new TextDecoder().decode(silenceOutput);
+        
+        // Parse silence detection results
+        const silenceData = this.parseSilenceOutput(silenceText);
+        
+        // Get file duration
+        const durationCmd = [
+            '-i', file.name,
+            '-show_entries', 'format=duration',
+            '-of', 'default=nk=1:nw=1'
+        ];
+        
+        await this.ffmpeg.exec(durationCmd);
+        const durationOutput = await this.ffmpeg.readFile('stdout');
+        const durationText = new TextDecoder().decode(durationOutput);
+        const totalDuration = parseFloat(durationText.trim());
+        
+        // Calculate trim points
+        const startTime = Math.max(0, (silenceData.firstSilenceEnd || 0) - 0.005);
+        const endTime = silenceData.lastSilenceStart ? 
+            Math.min(totalDuration, silenceData.lastSilenceStart + 0.005) : 
+            totalDuration;
+        
+        const duration = Math.max(0.01, endTime - startTime);
+        
+        // Trim the audio
+        const outputName = `cleaned_${file.name}`;
+        const trimCmd = [
+            '-y',
+            '-ss', startTime.toFixed(3),
+            '-i', file.name,
+            '-t', duration.toFixed(3),
+            '-c:a', 'pcm_s16le',
+            outputName
+        ];
+        
+        await this.ffmpeg.exec(trimCmd);
+        
+        // Read the output file
+        const outputData = await this.ffmpeg.readFile(outputName);
+        
+        return {
+            originalFile: file,
+            outputData: outputData,
+            outputName: outputName,
+            startTime: startTime,
+            endTime: endTime,
+            duration: duration,
+            success: true
+        };
     }
     
     parseSilenceOutput(output) {
