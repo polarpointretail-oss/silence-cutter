@@ -76,7 +76,22 @@
     </div>
 
     <!-- FFmpeg.wasm UMD -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+    
+    <script>
+        // Test if UMD script loaded
+        console.log('=== UMD SCRIPT TEST ===');
+        console.log('FFmpeg available:', typeof window.FFmpeg);
+        console.log('createFFmpeg available:', typeof window.createFFmpeg);
+        console.log('All window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('ffmpeg')));
+        
+        // Try to access FFmpeg directly
+        if (typeof window.FFmpeg !== 'undefined') {
+            console.log('FFmpeg object:', window.FFmpeg);
+            console.log('FFmpeg.createFFmpeg:', typeof window.FFmpeg.createFFmpeg);
+        }
+        console.log('=== END TEST ===');
+    </script>
     
     <script type="module" src="script.js?v=20250127-simple-umd"></script>
 </body>
