@@ -1,4 +1,6 @@
-// Web Audio API based silence cutter (simplified version)
+// Web Audio API based silence cutter - CACHE BUST VERSION
+console.log('NEW VERSION LOADED - Web Audio API only');
+
 class SilenceCutter {
     constructor() {
         this.files = [];
@@ -181,6 +183,8 @@ class SilenceCutter {
     
     async processFile(file, threshold, minDuration) {
         try {
+            console.log('Processing file:', file.name, 'with Web Audio API');
+            
             // Convert threshold from dB to linear scale
             const thresholdLinear = Math.pow(10, threshold / 20);
             
@@ -193,6 +197,8 @@ class SilenceCutter {
             const sampleRate = audioBuffer.sampleRate;
             const duration = audioBuffer.duration;
             
+            console.log('Audio decoded:', { sampleRate, duration, samples: channelData.length });
+            
             // Find silence boundaries
             const silenceData = this.detectSilence(channelData, sampleRate, thresholdLinear, minDuration);
             
@@ -201,6 +207,8 @@ class SilenceCutter {
             const endSample = silenceData.lastSilenceStart ? 
                 Math.min(channelData.length, Math.floor((silenceData.lastSilenceStart + minDuration) * sampleRate)) : 
                 channelData.length;
+            
+            console.log('Trim points:', { startSample, endSample, startTime: startSample/sampleRate, endTime: endSample/sampleRate });
             
             // Create trimmed audio buffer
             const trimmedLength = endSample - startSample;
@@ -386,5 +394,6 @@ class SilenceCutter {
 // Initialize the app when the page loads
 let silenceCutter;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing SilenceCutter');
     silenceCutter = new SilenceCutter();
 });
