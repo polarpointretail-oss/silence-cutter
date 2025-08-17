@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Silence Cutter - Web Audio Cleaner</title>
-    <meta name="description" content="Remove silence from audio files directly in your browser. No downloads required.">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <title>Silence Cutter - Audio Cleaner</title>
+    <meta name="description" content="Remove silence from audio files using FFmpeg.wasm">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 </head>
@@ -15,7 +12,7 @@
     <div class="container">
         <header class="header">
             <h1>🎵 Silence Cutter</h1>
-            <p>Remove silence from audio files directly in your browser</p>
+            <p>Remove silence from audio files using FFmpeg.wasm</p>
         </header>
 
         <main class="main">
@@ -45,8 +42,8 @@
                 <div class="setting-group">
                     <label for="minSilenceDuration">Minimum Silence Duration:</label>
                     <div class="duration-control">
-                        <input type="range" id="minSilenceDuration" min="0.1" max="2.0" value="0.5" step="0.1">
-                        <span id="durationValue">0.5 seconds</span>
+                        <input type="range" id="minSilenceDuration" min="0.01" max="1.0" value="0.01" step="0.01">
+                        <span id="durationValue">0.01 seconds</span>
                     </div>
                     <small>Minimum duration of silence to be detected</small>
                 </div>
@@ -63,7 +60,7 @@
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
-                <div class="progress-text" id="progressText">Initializing...</div>
+                <div class="progress-text" id="progressText">Initializing FFmpeg...</div>
             </div>
 
             <div class="results-section" id="resultsSection" style="display: none;">
@@ -74,10 +71,13 @@
         </main>
 
         <footer class="footer">
-            <p>Built with Web Audio API • No data leaves your browser • <a href="https://github.com/polarpointretail-oss/silence-cutter" target="_blank">GitHub</a></p>
+            <p>Powered by FFmpeg.wasm • No data leaves your browser • <a href="https://github.com/polarpointretail-oss/silence-cutter" target="_blank">GitHub</a></p>
         </footer>
     </div>
 
-                <script src="script.js?v=20250127-001"></script>
+    <!-- FFmpeg.wasm CDN -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+    <script src="script.js?v=20250127-ffmpeg"></script>
 </body>
 </html>
