@@ -1,17 +1,18 @@
 {
-  "name": "audio-cleaner",
+  "name": "silence-cutter",
   "version": "1.0.0",
-  "description": "MP3 silence remover GUI",
+  "description": "Web-based audio silence remover - no downloads required",
   "main": "main.js",
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "build": "echo 'Static web app - no build required'",
+    "vercel-build": "echo 'Static site ready for deployment'",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win"
   },
   "build": {
-    "appId": "com.yourbrand.audio.cleaner",
+    "appId": "com.polarpointretail.silence.cutter",
     "files": [
       "main.js",
       "preload.js",
