@@ -1,4 +1,4 @@
-// ES Module approach for FFmpeg.wasm
+// Simple UMD approach for FFmpeg.wasm
 console.log('Script loading...');
 
 class SilenceCutter {
@@ -29,48 +29,13 @@ class SilenceCutter {
         console.log('Loading FFmpeg.wasm...');
         
         try {
-            // Try multiple approaches to load FFmpeg
-            let createFFmpeg, fetchFile;
-            
-            // Approach 1: Try ES module import
-            try {
-                const module = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js');
-                createFFmpeg = module.createFFmpeg;
-                fetchFile = module.fetchFile;
-                console.log('FFmpeg loaded via ES module');
-            } catch (esmError) {
-                console.log('ES module failed, trying UMD approach...');
-                console.log('ES module error:', esmError);
-                
-                // Approach 2: Try UMD approach
-                console.log('Checking for FFmpeg global:', typeof window.FFmpeg);
-                console.log('Window FFmpeg object:', window.FFmpeg);
-                
-                if (typeof window.FFmpeg !== 'undefined') {
-                    createFFmpeg = window.FFmpeg.createFFmpeg;
-                    fetchFile = window.FFmpeg.fetchFile;
-                    console.log('FFmpeg loaded via UMD');
-                } else {
-                    // Try alternative UMD structure
-                    console.log('Checking for createFFmpeg global:', typeof window.createFFmpeg);
-                    if (typeof window.createFFmpeg !== 'undefined') {
-                        createFFmpeg = window.createFFmpeg;
-                        fetchFile = window.fetchFile;
-                        console.log('FFmpeg loaded via global createFFmpeg');
-                    } else {
-                        throw new Error('FFmpeg not available in any format');
-                    }
-                }
+            // Simple UMD approach - use the global FFmpeg object
+            if (typeof window.FFmpeg === 'undefined') {
+                throw new Error('FFmpeg.wasm not loaded. Please check your internet connection.');
             }
             
-            console.log('createFFmpeg function:', typeof createFFmpeg);
-            console.log('fetchFile function:', typeof fetchFile);
-            
-            this.ffmpeg = createFFmpeg({ 
-                log: true,
-                coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.js',
-                wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/umd/ffmpeg-core.wasm'
-            });
+            const { createFFmpeg, fetchFile } = window.FFmpeg;
+            this.ffmpeg = createFFmpeg({ log: true });
             
             await this.ffmpeg.load();
             
