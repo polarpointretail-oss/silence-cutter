@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 const Settings = ({ onChange, disabled = false }) => {
-  const [threshold, setThreshold] = useState(-30);
-  const [duration, setDuration] = useState(0.6);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [threshold, setThreshold] = useState(-50);
+  const [duration, setDuration] = useState(0.8);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     onChange({ threshold, duration });

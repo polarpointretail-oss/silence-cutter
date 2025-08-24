@@ -155,13 +155,13 @@ export const concatenateAudioFiles = async (audioFiles) => {
  * Detects and trims silence from audio
  * @param {Uint8Array} inputData - Audio data to process
  * @param {Object} options - Silence detection options
- * @param {number} options.threshold - Silence threshold in dB (e.g., -30)
+ * @param {number} options.threshold - Silence threshold in dB (e.g., -50)
  * @param {number} options.duration - Minimum silence duration in seconds (e.g., 0.1)
  * @returns {Promise<Uint8Array>} - Processed audio as Uint8Array
  */
 export const trimSilence = async (
   inputData,
-  options = { threshold: -30, duration: 0.6 }
+  options = { threshold: -50, duration: 0.8 }
 ) => {
   try {
     console.log("Starting silence trimming with options:", options);

@@ -71,8 +71,8 @@ npm run build
 
 ### Settings Explained
 
-- **Silence Threshold**: Audio level below which is considered silence (default: -30dB)
-- **Minimum Duration**: Minimum silence duration to remove (default: 0.1 seconds)
+- **Silence Threshold**: Audio level below which is considered silence (default: -50dB)
+- **Minimum Duration**: Minimum silence duration to remove (default: 0.8 seconds)
 
 ## 🚀 Deployment
 
